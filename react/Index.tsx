@@ -3,9 +3,8 @@ import type { ProductTypes } from 'vtex.product-context'
 import { useProduct } from 'vtex.product-context'
 import { useQuery } from 'react-apollo'
 import { useCssHandles } from 'vtex.css-handles'
-import { useRuntime } from 'vtex.render-runtime'
+import { useRuntime, Link } from 'vtex.render-runtime'
 import { useIntl } from 'react-intl'
-import { Link } from 'vtex.render-runtime'
 
 import productRecommendationsQuery from './queries/productRecommendations.gql'
 
@@ -14,8 +13,12 @@ interface SimilarProductsVariantsProps {
     product: {
       productId: string
     }
-  },
+  }
   imageLabel: string
+  textLabel: {
+    specificationGroupName: string
+    specificationName: string
+  }
 }
 
 const CSS_HANDLES = [
@@ -24,11 +27,13 @@ const CSS_HANDLES = [
   'var-wrap',
   'img_wrap',
   'img',
+  'textLabel',
 ] as const
 
 function SimilarProductsVariants({
   productQuery,
-  imageLabel
+  imageLabel,
+  textLabel,
 }: SimilarProductsVariantsProps) {
   const handles = useCssHandles(CSS_HANDLES)
   const intl = useIntl()
@@ -69,41 +74,97 @@ function SimilarProductsVariants({
     if (item) items.push(item)
   })
 
-  if( items.length == 0 ){
+  if (items.length === 0) {
     return <></>
   }
 
   return (
     <div className={`${handles.variants}`}>
-      <p className={`${handles.title}`}>{intl.formatMessage({ id: "store/title.label" })}</p>
+      <p className={`${handles.title}`}>
+        {intl.formatMessage({ id: 'store/title.label' })}
+      </p>
       <div className={handles['var-wrap']}>
         {items.map((element: ProductTypes.Product) => {
-          const imageIndex = imageLabel === undefined
-            ? 0
-            : element.items[0].images.findIndex(image => image.imageLabel === imageLabel) === -1
+          const imageIndex =
+            imageLabel === undefined
               ? 0
-              : element.items[0].images.findIndex(image => image.imageLabel === imageLabel)
+              : element.items[0].images.findIndex(
+                  image => image.imageLabel === imageLabel
+                ) === -1
+              ? 0
+              : element.items[0].images.findIndex(
+                  image => image.imageLabel === imageLabel
+                )
 
           const srcImage = element.items[0].images[imageIndex].imageUrl
+
+          // Labels
+          let indexSpecificationGroup = -1
+          let indexSpecification = -1
+
+          if (
+            element.specificationGroups.length >= 0 &&
+            element.specificationGroups.find(
+              group => group.name === textLabel?.specificationGroupName
+            )
+          ) {
+            indexSpecificationGroup = element.specificationGroups.findIndex(
+              group => group.name === textLabel?.specificationGroupName
+            )
+            if (
+              indexSpecificationGroup !== -1 &&
+              element.specificationGroups[
+                indexSpecificationGroup
+              ].specifications.find(
+                specification =>
+                  specification.name === textLabel?.specificationName
+              )
+            ) {
+              indexSpecification = element.specificationGroups[
+                indexSpecificationGroup
+              ].specifications.findIndex(
+                specification =>
+                  specification.name === textLabel?.specificationName
+              )
+            }
+          }
+
           return (
-            <Link 
+            <Link
               key={element.productId}
-              className={`${handles.img_wrap}${route?.params?.slug === element.linkText ? '--is-active' : ''}`}
+              className={`${handles.img_wrap}${
+                route?.params?.slug === element.linkText ? '--is-active' : ''
+              }`}
               {...{
-              page: 'store.product',
-              params: {
-              slug: element?.linkText,
-              id: element?.productId,
-              },
-            }}>
+                page: 'store.product',
+                params: {
+                  slug: element?.linkText,
+                  id: element?.productId,
+                },
+              }}
+            >
+              <span
+                className={`${handles.img_wrap}${
+                  route?.params?.slug === element.linkText ? '--is-active' : ''
+                }`}
+              >
                 <img
                   src={srcImage}
                   alt={element.productName}
                   height="50px"
-                  className={`${handles.img} mr3 ${route?.params?.slug === element.linkText ? 'o-50' : ''
-                    }`
-                  }
+                  className={`${handles.img} mr3 ${
+                    route?.params?.slug === element.linkText ? 'o-50' : ''
+                  }`}
                 />
+                {indexSpecificationGroup > -1 && indexSpecification > -1 && (
+                  <span className={`${handles.textLabel}`}>
+                    {
+                      element.specificationGroups[indexSpecificationGroup]
+                        .specifications[indexSpecification].values[0]
+                    }
+                  </span>
+                )}
+              </span>
             </Link>
           )
         })}
