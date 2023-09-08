@@ -20,19 +20,29 @@ interface SimilarProductsVariantsProps {
     specificationName: string
   }
 }
+interface Item {
+  sellers?: Seller[]
+}
+
+interface Seller {
+  commertialOffer: CommercialOffer
+}
+interface CommercialOffer {
+  AvailableQuantity: number
+}
 
 const CSS_HANDLES = [
   'variants',
   'title',
   'var-wrap',
   'img_wrap',
+  'text_wrap',
   'img',
   'textLabel',
 ] as const
 
 function SimilarProductsVariants({
   productQuery,
-  imageLabel,
   textLabel,
 }: SimilarProductsVariantsProps) {
   const handles = useCssHandles(CSS_HANDLES)
@@ -84,20 +94,7 @@ function SimilarProductsVariants({
         {intl.formatMessage({ id: 'store/title.label' })}
       </p>
       <div className={handles['var-wrap']}>
-        {items.map((element: ProductTypes.Product) => {
-          const imageIndex =
-            imageLabel === undefined
-              ? 0
-              : element.items[0].images.findIndex(
-                  image => image.imageLabel === imageLabel
-                ) === -1
-              ? 0
-              : element.items[0].images.findIndex(
-                  image => image.imageLabel === imageLabel
-                )
-
-          const srcImage = element.items[0].images[imageIndex].imageUrl
-
+        {items.map((element: ProductTypes.Product & Item) => {
           // Labels
           let indexSpecificationGroup = -1
           let indexSpecification = -1
@@ -129,12 +126,21 @@ function SimilarProductsVariants({
             }
           }
 
+          let isAvailable = ''
+
+          if (element) {
+            element.items[0].sellers[0].commertialOffer.AvailableQuantity
+              ? (isAvailable = 'available')
+              : (isAvailable = 'unavailable')
+            console.log('isAvailable', isAvailable)
+          }
+
           return (
             <Link
               key={element.productId}
               className={`${handles.img_wrap}${
                 route?.params?.slug === element.linkText ? '--is-active' : ''
-              }`}
+              } ${isAvailable}`}
               {...{
                 page: 'store.product',
                 params: {
@@ -144,20 +150,12 @@ function SimilarProductsVariants({
               }}
             >
               <span
-                className={`${handles.img_wrap}${
+                className={`${handles.text_wrap}${
                   route?.params?.slug === element.linkText ? '--is-active' : ''
-                }`}
+                } ${isAvailable}`}
               >
-                <img
-                  src={srcImage}
-                  alt={element.productName}
-                  height="50px"
-                  className={`${handles.img} mr3 ${
-                    route?.params?.slug === element.linkText ? 'o-50' : ''
-                  }`}
-                />
                 {indexSpecificationGroup > -1 && indexSpecification > -1 && (
-                  <span className={`${handles.textLabel}`}>
+                  <span className={`${handles.textLabel} ${isAvailable}`}>
                     {
                       element.specificationGroups[indexSpecificationGroup]
                         .specifications[indexSpecification].values[0]

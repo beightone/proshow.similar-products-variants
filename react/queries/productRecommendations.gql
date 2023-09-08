@@ -15,7 +15,7 @@ query ProductRecommendations(
         values
       }
     }
-    items {
+    items(filter: ALL_AVAILABLE) {
       images {
         imageLabel
         imageUrl
@@ -23,6 +23,11 @@ query ProductRecommendations(
       variations {
         name
         values
+      }
+      sellers {
+        commertialOffer {
+          AvailableQuantity
+        }
       }
     }
   }
