@@ -3,7 +3,7 @@ import type { ProductTypes } from 'vtex.product-context'
 import { useProduct } from 'vtex.product-context'
 import { useQuery } from 'react-apollo'
 import { useCssHandles } from 'vtex.css-handles'
-import { useRuntime, Link } from 'vtex.render-runtime'
+import { Link } from 'vtex.render-runtime'
 import { useIntl } from 'react-intl'
 
 import productRecommendationsQuery from './queries/productRecommendations.gql'
@@ -39,6 +39,7 @@ const CSS_HANDLES = [
   'text_wrap',
   'img',
   'textLabel',
+  'unavailable',
 ] as const
 
 function SimilarProductsVariants({
@@ -48,7 +49,6 @@ function SimilarProductsVariants({
   const handles = useCssHandles(CSS_HANDLES)
   const intl = useIntl()
   const productContext = useProduct()
-  const { route } = useRuntime()
   const productId =
     productQuery?.product?.productId ?? productContext?.product?.productId
 
@@ -126,21 +126,19 @@ function SimilarProductsVariants({
             }
           }
 
-          let isAvailable = ''
+          let isAvailable = false
 
           if (element) {
-            element.items[0].sellers[0].commertialOffer.AvailableQuantity
-              ? (isAvailable = 'available')
-              : (isAvailable = 'unavailable')
-            console.log('isAvailable', isAvailable)
+            isAvailable =
+              element.items[0].sellers[0].commertialOffer.AvailableQuantity > 0
           }
 
           return (
             <Link
               key={element.productId}
-              className={`${handles.img_wrap}${
-                route?.params?.slug === element.linkText ? '--is-active' : ''
-              } ${isAvailable}`}
+              className={`${handles.img_wrap} ${
+                isAvailable ? '' : handles.unavailable
+              }`}
               {...{
                 page: 'store.product',
                 params: {
@@ -149,13 +147,9 @@ function SimilarProductsVariants({
                 },
               }}
             >
-              <span
-                className={`${handles.text_wrap}${
-                  route?.params?.slug === element.linkText ? '--is-active' : ''
-                } ${isAvailable}`}
-              >
+              <span className={`${handles.text_wrap}`}>
                 {indexSpecificationGroup > -1 && indexSpecification > -1 && (
-                  <span className={`${handles.textLabel} ${isAvailable}`}>
+                  <span className={`${handles.textLabel}`}>
                     {
                       element.specificationGroups[indexSpecificationGroup]
                         .specifications[indexSpecification].values[0]
