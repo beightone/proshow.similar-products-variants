@@ -7,6 +7,7 @@ import { Link } from 'vtex.render-runtime'
 import { useIntl } from 'react-intl'
 
 import productRecommendationsQuery from './queries/productRecommendations.gql'
+import SelectedItem from './components/SelectedItem'
 
 interface SimilarProductsVariantsProps {
   productQuery: {
@@ -94,6 +95,7 @@ function SimilarProductsVariants({
         {intl.formatMessage({ id: 'store/title.label' })}
       </p>
       <div className={handles['var-wrap']}>
+        <SelectedItem />
         {items.map((element: ProductTypes.Product & Item) => {
           // Labels
           let indexSpecificationGroup = -1
