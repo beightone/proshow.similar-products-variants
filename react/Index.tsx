@@ -3,10 +3,11 @@ import type { ProductTypes } from 'vtex.product-context'
 import { useProduct } from 'vtex.product-context'
 import { useQuery } from 'react-apollo'
 import { useCssHandles } from 'vtex.css-handles'
-import { useRuntime, Link } from 'vtex.render-runtime'
+import { Link } from 'vtex.render-runtime'
 import { useIntl } from 'react-intl'
 
 import productRecommendationsQuery from './queries/productRecommendations.gql'
+import SelectedItem from './components/SelectedItem'
 
 interface SimilarProductsVariantsProps {
   productQuery: {
@@ -20,25 +21,35 @@ interface SimilarProductsVariantsProps {
     specificationName: string
   }
 }
+interface Item {
+  sellers?: Seller[]
+}
+
+interface Seller {
+  commertialOffer: CommercialOffer
+}
+interface CommercialOffer {
+  AvailableQuantity: number
+}
 
 const CSS_HANDLES = [
   'variants',
   'title',
   'var-wrap',
   'img_wrap',
+  'text_wrap',
   'img',
   'textLabel',
+  'unavailable',
 ] as const
 
 function SimilarProductsVariants({
   productQuery,
-  imageLabel,
   textLabel,
 }: SimilarProductsVariantsProps) {
   const handles = useCssHandles(CSS_HANDLES)
   const intl = useIntl()
   const productContext = useProduct()
-  const { route } = useRuntime()
   const productId =
     productQuery?.product?.productId ?? productContext?.product?.productId
 
@@ -84,20 +95,8 @@ function SimilarProductsVariants({
         {intl.formatMessage({ id: 'store/title.label' })}
       </p>
       <div className={handles['var-wrap']}>
-        {items.map((element: ProductTypes.Product) => {
-          const imageIndex =
-            imageLabel === undefined
-              ? 0
-              : element.items[0].images.findIndex(
-                  image => image.imageLabel === imageLabel
-                ) === -1
-              ? 0
-              : element.items[0].images.findIndex(
-                  image => image.imageLabel === imageLabel
-                )
-
-          const srcImage = element.items[0].images[imageIndex].imageUrl
-
+        <SelectedItem />
+        {items.map((element: ProductTypes.Product & Item) => {
           // Labels
           let indexSpecificationGroup = -1
           let indexSpecification = -1
@@ -129,11 +128,18 @@ function SimilarProductsVariants({
             }
           }
 
+          let isAvailable = false
+
+          if (element) {
+            isAvailable =
+              element.items[0].sellers[0].commertialOffer.AvailableQuantity > 0
+          }
+
           return (
             <Link
               key={element.productId}
-              className={`${handles.img_wrap}${
-                route?.params?.slug === element.linkText ? '--is-active' : ''
+              className={`${handles.img_wrap} ${
+                isAvailable ? '' : handles.unavailable
               }`}
               {...{
                 page: 'store.product',
@@ -143,19 +149,7 @@ function SimilarProductsVariants({
                 },
               }}
             >
-              <span
-                className={`${handles.img_wrap}${
-                  route?.params?.slug === element.linkText ? '--is-active' : ''
-                }`}
-              >
-                <img
-                  src={srcImage}
-                  alt={element.productName}
-                  height="50px"
-                  className={`${handles.img} mr3 ${
-                    route?.params?.slug === element.linkText ? 'o-50' : ''
-                  }`}
-                />
+              <span className={`${handles.text_wrap}`}>
                 {indexSpecificationGroup > -1 && indexSpecification > -1 && (
                   <span className={`${handles.textLabel}`}>
                     {
